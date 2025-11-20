@@ -52,6 +52,23 @@ const MainGame: React.FC = () => {
         setOffsetYDisplay(offsetY.current - window.innerHeight / 2);
     }
 
+    const overPlanet = (worldMouseX: number, worldMouseY: number): number | null => {
+        for (let i = 0; i < simulation.planets.length; i++) {
+            const planet = simulation.planets[i];
+            if (planet.alive) {
+                const dx = worldMouseX - planet.pos.x;
+                const dy = worldMouseY - planet.pos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const clickRadius = planet.radius / zoom.current;
+
+                if (distance <= clickRadius) {
+                    return i;
+                }
+            }
+        }
+        return null;
+    };
+
 
     useEffect(() => {
         const sketch = (p5: p5) => {
@@ -78,12 +95,20 @@ const MainGame: React.FC = () => {
                     drawPlanet(p5, planet, offsetX.current, offsetY.current, zoom.current);
                 }
 
+                // Update cursor
+                const worldMouseX = (p5.mouseX - offsetX.current) / zoom.current;
+                const worldMouseY = (p5.mouseY - offsetY.current) / zoom.current;
+                const clickedPlanetIndex = overPlanet(worldMouseX, worldMouseY);
+
+                if (clickedPlanetIndex !== null) document.body.style.cursor = 'pointer';
+                else document.body.style.cursor = 'default';
+
+                // Draw border
                 drawBorder(p5);
 
                 setFpsDisplay(p5.frameRate());
             };
-
-
+            
             p5.mousePressed = (event) => {
                 if (event && event.button === 0) { // Left click
                     if (isAddingPlanet.current) {
@@ -116,22 +141,7 @@ const MainGame: React.FC = () => {
                         // Check if clicked on a planet
                         const worldMouseX = (p5.mouseX - offsetX.current) / zoom.current;
                         const worldMouseY = (p5.mouseY - offsetY.current) / zoom.current;
-                        let clickedPlanetIndex: number | null = null;
-
-                        for (let i = 0; i < simulation.planets.length; i++) {
-                            const planet = simulation.planets[i];
-                            if (planet.alive) {
-                                const dx = worldMouseX - planet.pos.x;
-                                const dy = worldMouseY - planet.pos.y;
-                                const distance = Math.sqrt(dx * dx + dy * dy);
-                                const clickRadius = planet.radius / zoom.current;
-
-                                if (distance <= clickRadius) {
-                                    clickedPlanetIndex = i;
-                                    break;
-                                }
-                            }
-                        }
+                        const clickedPlanetIndex = overPlanet(worldMouseX, worldMouseY);
 
                         if (clickedPlanetIndex !== null) { // Clicked on a planet
                             setPlanetInformation(simulation.planets[clickedPlanetIndex]);
@@ -425,3 +435,4 @@ const MainGame: React.FC = () => {
 
 
 export default MainGame;
+
